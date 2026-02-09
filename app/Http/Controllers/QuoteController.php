@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAutoQuoteRequest;
+use App\Http\Requests\StoreLifeGroupQuoteRequest;
 use App\Http\Requests\StoreLifeIndividualQuoteRequest;
 use App\Http\Requests\StoreMotorcycleQuoteRequest;
 use App\Http\Requests\StoreTruckQuoteRequest;
 use App\Models\Quote;
 use App\Models\QuoteAuto;
+use App\Models\QuoteLifeGroup;
 use App\Models\QuoteLifeIndividual;
 use App\Models\QuoteMotorcycle;
 use App\Models\QuoteTruck;
@@ -19,7 +21,7 @@ class QuoteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'tipo_seguro' => 'required|string|in:auto,motorcycle,truck,life_individual',
+            'tipo_seguro' => 'required|string|in:auto,motorcycle,truck,life_individual,life_group',
         ]);
 
         $type = $request->input('tipo_seguro');
@@ -49,7 +51,6 @@ class QuoteController extends Controller
 
             DB::commit();
 
-            // Carrega os relacionamentos de forma condicional
             $this->loadRelationships($quote, $type);
 
             return response()->json($quote, 201);
@@ -64,7 +65,6 @@ class QuoteController extends Controller
     {
         $quote = Quote::with(['documents', 'quotable'])->findOrFail($id);
 
-        // Carrega beneficiários apenas se for do tipo 'vida'
         if ($quote->quotable_type === QuoteLifeIndividual::class) {
             $quote->load('quotable.beneficiaries');
         }
@@ -79,6 +79,7 @@ class QuoteController extends Controller
             'motorcycle' => StoreMotorcycleQuoteRequest::class,
             'truck' => StoreTruckQuoteRequest::class,
             'life_individual' => StoreLifeIndividualQuoteRequest::class,
+            'life_group' => StoreLifeGroupQuoteRequest::class,
         ];
         return (new $map[$type])->rules();
     }
@@ -90,6 +91,7 @@ class QuoteController extends Controller
             'motorcycle' => QuoteMotorcycle::class,
             'truck' => QuoteTruck::class,
             'life_individual' => QuoteLifeIndividual::class,
+            'life_group' => QuoteLifeGroup::class,
         ][$type];
 
         if ($type === 'life_individual') {
