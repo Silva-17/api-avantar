@@ -4,25 +4,17 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreQuoteRequest extends FormRequest
+class StoreMotorcycleQuoteRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return true; // Assuming authentication is handled by middleware
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            // 1. Dados do Proponente
+            // Proponente
             'tipo_operacao' => 'required|string',
             'nome_completo' => 'required|string|max:255',
             'data_nascimento' => 'required|date',
@@ -34,14 +26,14 @@ class StoreQuoteRequest extends FormRequest
             'profissao' => 'required|string',
             'estado_civil' => 'required|string',
 
-            // 2. Especificação do Veículo
+            // Moto
             'placa' => 'required|string',
             'chassi' => 'required|string',
             'ano_fabricacao_modelo' => 'required|string',
             'marca' => 'required|string',
             'modelo' => 'required|string',
-
-            // 3. Questionário de Risco
+            'moto_club' => 'nullable|string',
+            'periodo_uso' => 'required|string',
             'tipo_uso' => 'required|string',
             'tipo_residencia' => 'required|string',
             'garagem_residencia' => 'required|string',
@@ -56,8 +48,6 @@ class StoreQuoteRequest extends FormRequest
             'pcd' => 'required|string',
             'inicio_vigencia' => 'required|date',
             'sinistro_ultimo_ano' => 'required|string',
-
-            // 4. Matriz de Coberturas
             'compreensiva_rcf' => 'boolean',
             'franquia_reduzida' => 'boolean',
             'app_morte_invalidez' => 'boolean',
@@ -66,14 +56,14 @@ class StoreQuoteRequest extends FormRequest
             'danos_morais' => 'boolean',
             'carro_reserva' => 'boolean',
             'assistencia_24h' => 'boolean',
-            'guincho_ilimitado' => 'boolean',
+            'guincho' => 'boolean',
             'martelinho_ouro' => 'boolean',
             'isencao_primeira_franquia' => 'boolean',
             'plano_vidros' => 'nullable|string',
 
-            // 5. Documentos
+            // Documentos
             'documentos' => 'nullable|array',
-            'documentos.*' => 'file|max:10240', // Max 10MB per file
+            'documentos.*' => 'file|max:10240',
         ];
     }
 }

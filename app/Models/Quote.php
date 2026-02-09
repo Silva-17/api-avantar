@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Quote extends Model
 {
@@ -15,19 +16,15 @@ class Quote extends Model
 
     protected $casts = [
         'data_nascimento' => 'date',
-        'inicio_vigencia' => 'date',
-        'compreensiva_rcf' => 'boolean',
-        'franquia_reduzida' => 'boolean',
-        'app_morte_invalidez' => 'boolean',
-        'danos_materiais' => 'boolean',
-        'danos_corporais' => 'boolean',
-        'danos_morais' => 'boolean',
-        'carro_reserva' => 'boolean',
-        'assistencia_24h' => 'boolean',
-        'guincho_ilimitado' => 'boolean',
-        'martelinho_ouro' => 'boolean',
-        'isencao_primeira_franquia' => 'boolean',
     ];
+
+    /**
+     * Get the parent quotable model (auto or motorcycle).
+     */
+    public function quotable(): MorphTo
+    {
+        return $this->morphTo();
+    }
 
     public function user(): BelongsTo
     {
