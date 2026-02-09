@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAutoQuoteRequest;
 use App\Http\Requests\StoreMotorcycleQuoteRequest;
+use App\Http\Requests\StoreTruckQuoteRequest;
 use App\Models\Quote;
 use App\Models\QuoteAuto;
 use App\Models\QuoteMotorcycle;
+use App\Models\QuoteTruck;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -15,7 +17,7 @@ class QuoteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'tipo_seguro' => 'required|string|in:auto,motorcycle',
+            'tipo_seguro' => 'required|string|in:auto,motorcycle,truck',
         ]);
 
         $type = $request->input('tipo_seguro');
@@ -28,10 +30,8 @@ class QuoteController extends Controller
         try {
             DB::beginTransaction();
 
-            // Passo 1: Crie o registro específico primeiro (auto ou moto).
             $quotable = $this->createQuotable($type, $specificData);
 
-            // Passo 2: Crie o orçamento mestre e associe ao registro específico.
             $quoteData = array_merge(
                 $proponentData,
                 [
@@ -42,7 +42,6 @@ class QuoteController extends Controller
             );
             $quote = Quote::create($quoteData);
 
-            // Salva os documentos, se houver.
             if ($request->hasFile('documentos')) {
                 foreach ($request->file('documentos') as $file) {
                     $path = $file->store('quotes', 'public');
@@ -74,6 +73,7 @@ class QuoteController extends Controller
         $map = [
             'auto' => StoreAutoQuoteRequest::class,
             'motorcycle' => StoreMotorcycleQuoteRequest::class,
+            'truck' => StoreTruckQuoteRequest::class,
         ];
         return (new $map[$type])->rules();
     }
@@ -83,6 +83,7 @@ class QuoteController extends Controller
         $map = [
             'auto' => QuoteAuto::class,
             'motorcycle' => QuoteMotorcycle::class,
+            'truck' => QuoteTruck::class,
         ];
         return $map[$type]::create($data);
     }
