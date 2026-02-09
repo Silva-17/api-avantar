@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAutoQuoteRequest;
+use App\Http\Requests\StoreLifeIndividualQuoteRequest;
 use App\Http\Requests\StoreMotorcycleQuoteRequest;
 use App\Http\Requests\StoreTruckQuoteRequest;
 use App\Models\Quote;
 use App\Models\QuoteAuto;
+use App\Models\QuoteLifeIndividual;
 use App\Models\QuoteMotorcycle;
 use App\Models\QuoteTruck;
 use Illuminate\Http\Request;
@@ -17,30 +19,23 @@ class QuoteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'tipo_seguro' => 'required|string|in:auto,motorcycle,truck',
+            'tipo_seguro' => 'required|string|in:auto,motorcycle,truck,life_individual',
         ]);
 
         $type = $request->input('tipo_seguro');
         $rules = $this->getRulesForType($type);
         $validatedData = $request->validate($rules);
 
-        $proponentData = $this->extractProponentData($validatedData);
-        $specificData = array_diff_key($validatedData, $proponentData);
-
         try {
             DB::beginTransaction();
 
-            $quotable = $this->createQuotable($type, $specificData);
+            $quotable = $this->createQuotable($type, $validatedData);
 
-            $quoteData = array_merge(
-                $proponentData,
-                [
-                    'user_id' => $request->user()->id,
-                    'quotable_id' => $quotable->id,
-                    'quotable_type' => get_class($quotable),
-                ]
-            );
-            $quote = Quote::create($quoteData);
+            $quote = Quote::create([
+                'user_id' => $request->user()->id,
+                'quotable_id' => $quotable->id,
+                'quotable_type' => get_class($quotable),
+            ]);
 
             if ($request->hasFile('documentos')) {
                 foreach ($request->file('documentos') as $file) {
@@ -54,7 +49,10 @@ class QuoteController extends Controller
 
             DB::commit();
 
-            return response()->json($quote->load(['documents', 'quotable']), 201);
+            // Carrega os relacionamentos de forma condicional
+            $this->loadRelationships($quote, $type);
+
+            return response()->json($quote, 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -65,6 +63,12 @@ class QuoteController extends Controller
     public function show($id)
     {
         $quote = Quote::with(['documents', 'quotable'])->findOrFail($id);
+
+        // Carrega beneficiários apenas se for do tipo 'vida'
+        if ($quote->quotable_type === QuoteLifeIndividual::class) {
+            $quote->load('quotable.beneficiaries');
+        }
+
         return response()->json($quote);
     }
 
@@ -74,33 +78,37 @@ class QuoteController extends Controller
             'auto' => StoreAutoQuoteRequest::class,
             'motorcycle' => StoreMotorcycleQuoteRequest::class,
             'truck' => StoreTruckQuoteRequest::class,
+            'life_individual' => StoreLifeIndividualQuoteRequest::class,
         ];
         return (new $map[$type])->rules();
     }
 
     private function createQuotable(string $type, array $data)
     {
-        $map = [
+        $modelClass = [
             'auto' => QuoteAuto::class,
             'motorcycle' => QuoteMotorcycle::class,
             'truck' => QuoteTruck::class,
-        ];
-        return $map[$type]::create($data);
+            'life_individual' => QuoteLifeIndividual::class,
+        ][$type];
+
+        if ($type === 'life_individual') {
+            $beneficiaries = $data['beneficiarios'];
+            unset($data['beneficiarios']);
+            $lifeQuote = $modelClass::create($data);
+            $lifeQuote->beneficiaries()->createMany($beneficiaries);
+            return $lifeQuote;
+        }
+
+        return $modelClass::create($data);
     }
 
-    private function extractProponentData(array $validatedData): array
+    private function loadRelationships(Quote $quote, string $type): void
     {
-        return [
-            'tipo_operacao' => $validatedData['tipo_operacao'],
-            'nome_completo' => $validatedData['nome_completo'],
-            'data_nascimento' => $validatedData['data_nascimento'],
-            'sexo' => $validatedData['sexo'],
-            'cpf_cnpj' => $validatedData['cpf_cnpj'],
-            'telefone' => $validatedData['telefone'],
-            'email' => $validatedData['email'],
-            'cep' => $validatedData['cep'],
-            'profissao' => $validatedData['profissao'],
-            'estado_civil' => $validatedData['estado_civil'],
-        ];
+        $relations = ['documents', 'quotable'];
+        if ($type === 'life_individual') {
+            $relations[] = 'quotable.beneficiaries';
+        }
+        $quote->load($relations);
     }
 }
