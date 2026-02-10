@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAutoQuoteRequest;
+use App\Http\Requests\StoreCondominiumQuoteRequest;
 use App\Http\Requests\StoreLifeGroupQuoteRequest;
 use App\Http\Requests\StoreLifeIndividualQuoteRequest;
 use App\Http\Requests\StoreMotorcycleQuoteRequest;
@@ -10,6 +11,7 @@ use App\Http\Requests\StoreResidentialQuoteRequest;
 use App\Http\Requests\StoreTruckQuoteRequest;
 use App\Models\Quote;
 use App\Models\QuoteAuto;
+use App\Models\QuoteCondominium;
 use App\Models\QuoteLifeGroup;
 use App\Models\QuoteLifeIndividual;
 use App\Models\QuoteMotorcycle;
@@ -23,7 +25,7 @@ class QuoteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'tipo_seguro' => 'required|string|in:auto,motorcycle,truck,life_individual,life_group,residential',
+            'tipo_seguro' => 'required|string|in:auto,motorcycle,truck,life_individual,life_group,residential,condominium',
         ]);
 
         $type = $request->input('tipo_seguro');
@@ -83,6 +85,7 @@ class QuoteController extends Controller
             'life_individual' => StoreLifeIndividualQuoteRequest::class,
             'life_group' => StoreLifeGroupQuoteRequest::class,
             'residential' => StoreResidentialQuoteRequest::class,
+            'condominium' => StoreCondominiumQuoteRequest::class,
         ];
         return (new $map[$type])->rules();
     }
@@ -96,6 +99,7 @@ class QuoteController extends Controller
             'life_individual' => QuoteLifeIndividual::class,
             'life_group' => QuoteLifeGroup::class,
             'residential' => QuoteResidential::class,
+            'condominium' => QuoteCondominium::class,
         ][$type];
 
         if ($type === 'life_individual') {
