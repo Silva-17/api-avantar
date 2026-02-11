@@ -24,6 +24,37 @@ use Illuminate\Support\Facades\DB;
 
 class QuoteController extends Controller
 {
+    public function index(Request $request)
+    {
+        $user = $request->user();
+        $query = Quote::query();
+
+        // Select only the necessary fields to reduce the payload
+        $query->select('id', 'status', 'quotable_type', 'user_id', 'created_at');
+
+        // Eager load the user's name
+        $query->with(['user:id,name']);
+
+        // If the user is not an admin, they can only see their own quotes.
+        if ($user->role !== 'admin') {
+            $query->where('user_id', $user->id);
+        }
+
+        // Apply status filter if provided
+        if ($request->has('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $quotes = $query->get()->map(function ($quote) {
+            // Simplify the quotable_type to just the type name
+            $quote->tipo_formulario = last(explode('\\', $quote->quotable_type));
+            unset($quote->quotable_type); // remove the full class name
+            return $quote;
+        });
+
+        return response()->json($quotes);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
