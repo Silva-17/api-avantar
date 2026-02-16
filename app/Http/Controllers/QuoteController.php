@@ -117,6 +117,27 @@ class QuoteController extends Controller
         return response()->json($quote);
     }
 
+    public function updateStatus(Request $request, $id)
+    {
+        // Apenas admins podem alterar o status
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'status_id' => 'required|exists:quote_statuses,id',
+        ]);
+
+        $quote = Quote::findOrFail($id);
+        $quote->quote_status_id = $request->input('status_id');
+        $quote->save();
+
+        // Recarrega o relacionamento para retornar o objeto completo
+        $quote->load('quoteStatus');
+
+        return response()->json($quote);
+    }
+
     private function getRulesForType(string $type): array
     {
         $map = [
