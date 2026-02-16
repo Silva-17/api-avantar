@@ -30,25 +30,30 @@ class QuoteController extends Controller
         $query = Quote::query();
 
         // Select only the necessary fields to reduce the payload
-        $query->select('id', 'status', 'quotable_type', 'user_id', 'created_at');
+        // Note: We select quote_status_id instead of status
+        $query->select('id', 'quote_status_id', 'quotable_type', 'user_id', 'created_at');
 
-        // Eager load the user's name
-        $query->with(['user:id,name']);
+        // Eager load the user's name and the status name
+        $query->with(['user:id,name', 'quoteStatus:id,name']);
 
         // If the user is not an admin, they can only see their own quotes.
         if ($user->role !== 'admin') {
             $query->where('user_id', $user->id);
         }
 
-        // Apply status filter if provided
+        // Apply status filter if provided (filtering by status ID)
         if ($request->has('status')) {
-            $query->where('status', $request->input('status'));
+            $query->where('quote_status_id', $request->input('status'));
         }
 
         $quotes = $query->get()->map(function ($quote) {
             // Simplify the quotable_type to just the type name
             $quote->tipo_formulario = last(explode('\\', $quote->quotable_type));
             unset($quote->quotable_type); // remove the full class name
+
+            // Flatten the status object to just the name or keep the object as needed
+            // Here we keep the relationship loaded as 'quote_status'
+
             return $quote;
         });
 
@@ -70,10 +75,12 @@ class QuoteController extends Controller
 
             $quotable = $this->createQuotable($type, $validatedData);
 
+            // Create quote with default status (0 - Em Fila)
             $quote = Quote::create([
                 'user_id' => $request->user()->id,
                 'quotable_id' => $quotable->id,
                 'quotable_type' => get_class($quotable),
+                'quote_status_id' => 0,
             ]);
 
             if ($request->hasFile('documentos')) {
@@ -89,6 +96,7 @@ class QuoteController extends Controller
             DB::commit();
 
             $this->loadRelationships($quote, $type);
+            $quote->load('quoteStatus'); // Load the status relationship
 
             return response()->json($quote, 201);
 
@@ -100,7 +108,7 @@ class QuoteController extends Controller
 
     public function show($id)
     {
-        $quote = Quote::with(['documents', 'quotable'])->findOrFail($id);
+        $quote = Quote::with(['documents', 'quotable', 'quoteStatus'])->findOrFail($id);
 
         if ($quote->quotable_type === QuoteLifeIndividual::class) {
             $quote->load('quotable.beneficiaries');

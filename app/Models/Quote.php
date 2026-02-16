@@ -35,4 +35,12 @@ class Quote extends Model
     {
         return $this->hasMany(QuoteDocument::class);
     }
+
+    /**
+     * Get the status of the quote.
+     */
+    public function quoteStatus(): BelongsTo
+    {
+        return $this->belongsTo(QuoteStatus::class);
+    }
 }
