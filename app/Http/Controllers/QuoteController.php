@@ -108,7 +108,8 @@ class QuoteController extends Controller
 
     public function show($id)
     {
-        $quote = Quote::with(['documents', 'quotable', 'quoteStatus'])->findOrFail($id);
+        // Carrega a resposta junto com os outros relacionamentos
+        $quote = Quote::with(['documents', 'quotable', 'quoteStatus', 'response'])->findOrFail($id);
 
         if ($quote->quotable_type === QuoteLifeIndividual::class) {
             $quote->load('quotable.beneficiaries');

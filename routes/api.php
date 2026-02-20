@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\QuoteResponseController;
 use App\Http\Controllers\QuoteStatusController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -24,7 +25,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/quotes', [QuoteController::class, 'index']);
     Route::post('/quotes', [QuoteController::class, 'store']);
     Route::get('/quotes/{id}', [QuoteController::class, 'show']);
-    Route::patch('/quotes/{id}/status', [QuoteController::class, 'updateStatus']); // Nova rota para atualizar status
+    Route::patch('/quotes/{id}/status', [QuoteController::class, 'updateStatus']);
+    Route::post('/quotes/{id}/response', [QuoteResponseController::class, 'store']); // Nova rota para resposta
 
     // Rota para listar status de cotações
     Route::get('/quote-statuses', [QuoteStatusController::class, 'index']);
