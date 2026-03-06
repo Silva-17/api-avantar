@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Quote extends Model
@@ -46,10 +45,10 @@ class Quote extends Model
     }
 
     /**
-     * Get the response for the quote.
+     * Get all responses for the quote.
      */
-    public function response(): HasOne
+    public function responses(): HasMany
     {
-        return $this->hasOne(QuoteResponse::class);
+        return $this->hasMany(QuoteResponse::class);
     }
 }

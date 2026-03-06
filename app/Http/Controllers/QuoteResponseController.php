@@ -37,11 +37,8 @@ class QuoteResponseController extends Controller
             $data['original_file_name'] = $file->getClientOriginalName();
         }
 
-        // Usa updateOrCreate para garantir apenas uma resposta por cotação (ou atualiza a existente)
-        $response = QuoteResponse::updateOrCreate(
-            ['quote_id' => $quote->id],
-            $data
-        );
+        // Cria uma nova resposta (permite múltiplas respostas para a mesma cotação)
+        $response = QuoteResponse::create($data);
 
         return response()->json($response, 201);
     }
