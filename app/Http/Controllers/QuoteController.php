@@ -10,6 +10,14 @@ use App\Http\Requests\StoreLifeIndividualQuoteRequest;
 use App\Http\Requests\StoreMotorcycleQuoteRequest;
 use App\Http\Requests\StoreResidentialQuoteRequest;
 use App\Http\Requests\StoreTruckQuoteRequest;
+use App\Http\Requests\UpdateAutoQuoteRequest;
+use App\Http\Requests\UpdateCondominiumQuoteRequest;
+use App\Http\Requests\UpdateConsortiumQuoteRequest;
+use App\Http\Requests\UpdateLifeGroupQuoteRequest;
+use App\Http\Requests\UpdateLifeIndividualQuoteRequest;
+use App\Http\Requests\UpdateMotorcycleQuoteRequest;
+use App\Http\Requests\UpdateResidentialQuoteRequest;
+use App\Http\Requests\UpdateTruckQuoteRequest;
 use App\Models\Quote;
 use App\Models\QuoteAuto;
 use App\Models\QuoteCondominium;
@@ -22,6 +30,7 @@ use App\Models\QuoteTruck;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class QuoteController extends Controller
 {
@@ -161,6 +170,57 @@ class QuoteController extends Controller
         return response()->json($quote);
     }
 
+    public function update(Request $request, $id)
+    {
+        $quote = Quote::with('quotable')->findOrFail($id);
+
+        // Check if the authenticated user is the owner of the quote
+        if ($request->user()->id !== $quote->user_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Determine the type from the existing model
+        $type = $this->getTypeFromQuotableClass(get_class($quote->quotable));
+
+        if (!$type) {
+            return response()->json(['message' => 'Tipo de cotação inválido ou não encontrado.'], 400);
+        }
+
+        // Get validation rules specific to this quote type for UPDATE
+        $rules = $this->getUpdateRulesForType($type);
+
+        // Remove 'tipo_seguro' from request data to avoid any confusion during validation
+        $requestData = $request->except('tipo_seguro');
+
+        try {
+            $validatedData = validator($requestData, $rules)->validate();
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'Dados inválidos.', 'errors' => $e->errors()], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $quotable = $quote->quotable;
+            $quotable->update($validatedData);
+
+            // Reset the status to "em fila" (0)
+            $quote->quote_status_id = 0;
+            $quote->save();
+
+            DB::commit();
+
+            $this->loadRelationships($quote, $type);
+            $quote->load('quoteStatus');
+
+            return response()->json($quote);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Erro ao atualizar o orçamento.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
     public function updateStatus(Request $request, $id)
     {
         // Apenas admins podem alterar o status
@@ -197,18 +257,25 @@ class QuoteController extends Controller
         return (new $map[$type])->rules();
     }
 
+    private function getUpdateRulesForType(string $type): array
+    {
+        $map = [
+            'auto' => UpdateAutoQuoteRequest::class,
+            'motorcycle' => UpdateMotorcycleQuoteRequest::class,
+            'truck' => UpdateTruckQuoteRequest::class,
+            'life_individual' => UpdateLifeIndividualQuoteRequest::class,
+            'life_group' => UpdateLifeGroupQuoteRequest::class,
+            'residential' => UpdateResidentialQuoteRequest::class,
+            'condominium' => UpdateCondominiumQuoteRequest::class,
+            'consortium' => UpdateConsortiumQuoteRequest::class,
+        ];
+        // We don't need to unset 'tipo_seguro' here because Update requests don't have it in rules
+        return (new $map[$type])->rules();
+    }
+
     private function createQuotable(string $type, array $data)
     {
-        $modelClass = [
-            'auto' => QuoteAuto::class,
-            'motorcycle' => QuoteMotorcycle::class,
-            'truck' => QuoteTruck::class,
-            'life_individual' => QuoteLifeIndividual::class,
-            'life_group' => QuoteLifeGroup::class,
-            'residential' => QuoteResidential::class,
-            'condominium' => QuoteCondominium::class,
-            'consortium' => QuoteConsortium::class,
-        ][$type];
+        $modelClass = $this->getQuotableClassFromType($type);
 
         if ($type === 'life_individual') {
             $beneficiaries = $data['beneficiarios'];
@@ -244,5 +311,21 @@ class QuoteController extends Controller
         ];
 
         return $map[$type] ?? null;
+    }
+
+    private function getTypeFromQuotableClass(string $class): ?string
+    {
+        $map = [
+            QuoteAuto::class => 'auto',
+            QuoteMotorcycle::class => 'motorcycle',
+            QuoteTruck::class => 'truck',
+            QuoteLifeIndividual::class => 'life_individual',
+            QuoteLifeGroup::class => 'life_group',
+            QuoteResidential::class => 'residential',
+            QuoteCondominium::class => 'condominium',
+            QuoteConsortium::class => 'consortium',
+        ];
+
+        return $map[$class] ?? null;
     }
 }

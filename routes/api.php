@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/quotes', [QuoteController::class, 'index']);
     Route::post('/quotes', [QuoteController::class, 'store']);
     Route::get('/quotes/{id}', [QuoteController::class, 'show']);
+    Route::put('/quotes/{id}', [QuoteController::class, 'update']);
     Route::patch('/quotes/{id}/status', [QuoteController::class, 'updateStatus']);
     Route::post('/quotes/{id}/response', [QuoteResponseController::class, 'store']); // Nova rota para resposta
 
