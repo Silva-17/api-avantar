@@ -93,7 +93,15 @@ class QuoteController extends Controller
             });
         }
 
-        $quotes = $query->get()->map(function ($quote) {
+        // Sorting
+        $sortOrder = $request->input('sort_order', 'desc');
+        $direction = ($sortOrder === 'cresc') ? 'asc' : 'desc';
+        $query->orderBy('created_at', $direction);
+
+        $perPage = $request->input('per_page', 10);
+        $quotes = $query->paginate($perPage);
+
+        $quotes->getCollection()->transform(function ($quote) {
             // Simplify the quotable_type to just the type name
             $quote->tipo_formulario = last(explode('\\', $quote->quotable_type));
 
