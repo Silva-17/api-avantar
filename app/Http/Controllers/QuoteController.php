@@ -47,7 +47,7 @@ class QuoteController extends Controller
         $query->with(['user:id,name', 'quoteStatus:id,name', 'quotable']);
 
         // Filter by User (Consultant)
-        if ($user->role === 'admin') {
+        if (in_array($user->role, ['admin', 'gestor'])) {
             if ($request->has('user_id')) {
                 $query->where('user_id', $request->input('user_id'));
             }
@@ -232,7 +232,7 @@ class QuoteController extends Controller
     public function updateStatus(Request $request, $id)
     {
         // Apenas admins podem alterar o status
-        if ($request->user()->role !== 'admin') {
+        if (!in_array($request->user()->role, ['admin', 'gestor'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
