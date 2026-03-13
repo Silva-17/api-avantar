@@ -40,14 +40,17 @@ class QuoteController extends Controller
         $query = Quote::query();
 
         // Select only the necessary fields to reduce the payload
-        $query->select('id', 'quote_status_id', 'quotable_type', 'quotable_id', 'user_id', 'created_at');
+        // Added 'attendant_id' to ensure the relationship can be loaded
+        $query->select('id', 'quote_status_id', 'quotable_type', 'quotable_id', 'user_id', 'attendant_id', 'created_at');
 
         // Eager load the user's name and the status name
         // Also eager load quotable to get client name in the response if needed
-        $query->with(['user:id,name', 'quoteStatus:id,name', 'quotable']);
+        $query->with(['user:id,name', 'quoteStatus:id,name', 'quotable', 'attendant:id,name']);
 
         // Filter by User (Consultant)
-        if (in_array($user->role, ['admin', 'gestor'])) {
+        if (in_array($user->role, ['admin', 'gestor', 'atendente'])) {
+             // Admin, Gestor e Atendente podem ver tudo (ou filtre conforme regra de negócio para atendente)
+             // Se atendente só pode ver as dele, ajuste aqui. Por enquanto, assumindo que vê tudo ou filtra por user_id.
             if ($request->has('user_id')) {
                 $query->where('user_id', $request->input('user_id'));
             }
@@ -169,7 +172,8 @@ class QuoteController extends Controller
     public function show($id)
     {
         // Carrega todas as respostas (responses) junto com os outros relacionamentos
-        $quote = Quote::with(['documents', 'quotable', 'quoteStatus', 'responses'])->findOrFail($id);
+        // Removido a restrição :id,name do attendant para garantir que venha os dados completos se houver problema
+        $quote = Quote::with(['documents', 'quotable', 'quoteStatus', 'responses', 'attendant'])->findOrFail($id);
 
         if ($quote->quotable_type === QuoteLifeIndividual::class) {
             $quote->load('quotable.beneficiaries');
@@ -246,6 +250,27 @@ class QuoteController extends Controller
 
         // Recarrega o relacionamento para retornar o objeto completo
         $quote->load('quoteStatus');
+
+        return response()->json($quote);
+    }
+
+    public function assignAttendant(Request $request, $id)
+    {
+        // Apenas admins ou gestores podem designar um atendente
+        if (!in_array($request->user()->role, ['admin', 'gestor'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'attendant_id' => 'required|exists:users,id',
+        ]);
+
+        $quote = Quote::findOrFail($id);
+        $quote->attendant_id = $request->input('attendant_id');
+        $quote->save();
+
+        // Recarrega o relacionamento para retornar o objeto completo
+        $quote->load('attendant');
 
         return response()->json($quote);
     }

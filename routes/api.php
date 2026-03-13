@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/quotes/{id}', [QuoteController::class, 'show']);
     Route::put('/quotes/{id}', [QuoteController::class, 'update']);
     Route::patch('/quotes/{id}/status', [QuoteController::class, 'updateStatus']);
+    Route::patch('/quotes/{id}/attendant', [QuoteController::class, 'assignAttendant']); // Nova rota para designar atendente
     Route::post('/quotes/{id}/response', [QuoteResponseController::class, 'store']); // Nova rota para resposta
 
     // Rota para listar status de cotações

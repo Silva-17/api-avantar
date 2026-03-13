@@ -27,7 +27,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'unit' => ['required', 'string', 'max:255'],
-            'role' => ['required', 'string', 'in:admin,consultant'],
+            'role' => ['required', 'string', 'in:admin,gestor,consultor,atendente'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 

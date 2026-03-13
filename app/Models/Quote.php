@@ -31,6 +31,14 @@ class Quote extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Get the attendant user (the one assigned to handle the quote).
+     */
+    public function attendant(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'attendant_id');
+    }
+
     public function documents(): HasMany
     {
         return $this->hasMany(QuoteDocument::class);
