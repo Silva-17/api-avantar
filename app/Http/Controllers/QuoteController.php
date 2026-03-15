@@ -48,12 +48,14 @@ class QuoteController extends Controller
         $query->with(['user:id,name', 'quoteStatus:id,name', 'quotable', 'attendant:id,name']);
 
         // Filter by User (Consultant)
-        if (in_array($user->role, ['admin', 'gestor', 'atendente'])) {
-             // Admin, Gestor e Atendente podem ver tudo (ou filtre conforme regra de negócio para atendente)
-             // Se atendente só pode ver as dele, ajuste aqui. Por enquanto, assumindo que vê tudo ou filtra por user_id.
+        if (in_array($user->role, ['admin', 'gestor'])) {
+             // Admin e Gestor podem ver tudo (ou filtre conforme regra de negócio)
             if ($request->has('user_id')) {
                 $query->where('user_id', $request->input('user_id'));
             }
+        } elseif ($user->role === 'atendente') {
+            // Atendente só pode ver as cotações que estão no nome dele (atribuídas a ele)
+            $query->where('attendant_id', $user->id);
         } else {
             // Non-admins can only see their own quotes
             $query->where('user_id', $user->id);

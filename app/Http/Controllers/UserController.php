@@ -19,6 +19,15 @@ class UserController extends Controller
     }
 
     /**
+     * Lista todos os atendentes.
+     */
+    public function listAttendants()
+    {
+        // Retorna todos os usuários com o papel 'atendente', ordenados por nome
+        return User::where('role', 'atendente')->orderBy('name')->get();
+    }
+
+    /**
      * Cria um novo usuário.
      */
     public function store(Request $request)

@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/quote-statuses', [QuoteStatusController::class, 'index']);
 
     // Rotas de Usuários
+    Route::get('/users/attendants', [UserController::class, 'listAttendants']); // Rota específica para listar atendentes
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
 
