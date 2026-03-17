@@ -15,6 +15,7 @@ class QuoteResponse extends Model
         'notes',
         'file_path',
         'original_file_name',
+        'lida',
     ];
 
     public function quote(): BelongsTo

@@ -47,6 +47,11 @@ class QuoteController extends Controller
         // Also eager load quotable to get client name in the response if needed
         $query->with(['user:id,name', 'quoteStatus:id,name', 'quotable', 'attendant:id,name']);
 
+        // Count unread responses
+        $query->withCount(['responses as unread_responses_count' => function ($query) {
+            $query->where('lida', false);
+        }]);
+
         // Filter by User (Consultant)
         if (in_array($user->role, ['admin', 'gestor'])) {
              // Admin e Gestor podem ver tudo (ou filtre conforme regra de negócio)
@@ -116,8 +121,13 @@ class QuoteController extends Controller
                 $quote->client_name = $quotable->nome_completo ?? $quotable->razao_social ?? 'N/A';
             }
 
+            // Determine if the quote has unread messages
+            // If unread_responses_count > 0, it means there are unread messages, so lida = false
+            $quote->lida = $quote->unread_responses_count === 0;
+
             unset($quote->quotable); // remove the full object if not needed, or keep it
             unset($quote->quotable_type); // remove the full class name
+            unset($quote->unread_responses_count); // remove the count from the response
 
             return $quote;
         });

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\QuoteResponseController;
 use App\Http\Controllers\QuoteStatusController;
@@ -11,6 +12,10 @@ use Illuminate\Support\Facades\Route;
 
 // Rota pública de login
 Route::post('/login', [AuthController::class, 'login']);
+
+// Rotas de recuperação de senha
+Route::post('/password/email', [PasswordResetController::class, 'sendResetLinkEmail']);
+Route::post('/password/reset', [PasswordResetController::class, 'reset']);
 
 Route::middleware('auth:sanctum')->group(function () {
     // Rota para obter o usuário autenticado
@@ -41,4 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Rotas para documentos protegidos
     Route::get('/documents/{document}/download', [DocumentController::class, 'download']);
     Route::get('/documents/{document}/view', [DocumentController::class, 'view']);
+
+    // Rota para marcar mensagens como lidas
+    Route::post('/mensagens/marcar-como-lida', [QuoteResponseController::class, 'markAsRead']);
 });

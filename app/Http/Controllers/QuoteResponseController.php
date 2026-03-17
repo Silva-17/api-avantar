@@ -5,15 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Quote;
 use App\Models\QuoteResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class QuoteResponseController extends Controller
 {
     public function store(Request $request, $id)
     {
-        // Apenas admins podem responder
-        if ($request->user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        $user = $request->user();
+        Log::info('QuoteResponseController@store: User role is ' . $user->role);
+
+        // Consultor não pode enviar mensagens
+        if ($user->role === 'consultor') {
+            return response()->json(['message' => 'Unauthorized. Consultants cannot send messages.'], 403);
         }
 
         $request->validate([
@@ -26,6 +29,7 @@ class QuoteResponseController extends Controller
         $data = [
             'quote_id' => $quote->id,
             'notes' => $request->input('notes'),
+            'lida' => false,
         ];
 
         if ($request->hasFile('file')) {
@@ -41,5 +45,38 @@ class QuoteResponseController extends Controller
         $response = QuoteResponse::create($data);
 
         return response()->json($response, 201);
+    }
+
+    public function markAsRead(Request $request)
+    {
+        // Apenas o consultor pode marcar como lida
+        if ($request->user()->role !== 'consultor') {
+            return response()->json(['message' => 'Unauthorized. Only consultants can mark messages as read.'], 403);
+        }
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:quote_responses,id',
+        ]);
+
+        $ids = $request->input('ids');
+        Log::info('Marking messages as read (individual update)', ['ids' => $ids, 'user_id' => $request->user()->id]);
+
+        $updatedCount = 0;
+        $responses = QuoteResponse::whereIn('id', $ids)->get();
+
+        foreach ($responses as $response) {
+            $response->lida = true;
+            if ($response->save()) {
+                $updatedCount++;
+            }
+        }
+
+        Log::info("Updated {$updatedCount} messages individually.");
+
+        return response()->json([
+            'message' => 'Messages marked as read',
+            'updated_count' => $updatedCount
+        ]);
     }
 }
