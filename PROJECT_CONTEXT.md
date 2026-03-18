@@ -55,3 +55,5 @@ As principais rotas são protegidas pelo middleware `auth:sanctum`:
 * Iniciar servidor: `php artisan serve` (geralmente executando na porta 8000).
 
 Este projeto tem foco na API (retorna JSON) e será/é consumido por uma aplicação Front-end cliente.
+
+Sempre responder o chat em portugues.

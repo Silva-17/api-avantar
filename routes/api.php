@@ -42,6 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/attendants', [UserController::class, 'listAttendants']); // Rota específica para listar atendentes
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
+    Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive']);
 
     // Rotas para documentos protegidos
     Route::get('/documents/{document}/download', [DocumentController::class, 'download']);

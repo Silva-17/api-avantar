@@ -50,4 +50,19 @@ class UserController extends Controller
 
         return response()->json($user, 201);
     }
+
+    /**
+     * Alterna o status de ativo/inativo do usuário.
+     */
+    public function toggleActive(User $user)
+    {
+        $user->update([
+            'is_active' => !$user->is_active
+        ]);
+
+        return response()->json([
+            'message' => 'Status do usuário atualizado com sucesso.',
+            'user' => $user
+        ]);
+    }
 }
