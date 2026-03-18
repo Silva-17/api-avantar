@@ -25,7 +25,7 @@ return [
         'http://localhost:8080', // Vue CLI
         'http://127.0.0.1:3000',
         'http://127.0.0.1:5173',
-        'https://swerkeseguros.com.br''
+        'https://swerkeseguros.com.br',
     ],
 
     'allowed_origins_patterns' => [],
